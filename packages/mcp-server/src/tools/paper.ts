@@ -57,7 +57,7 @@ export const paperTools: Tool[] = [
   {
     name: 'paper_download',
     description:
-      'Resolve an open-access PDF URL and (optionally) download it (download is not implemented yet; returns resolved URL)',
+      'Resolve an open-access PDF URL and download it. Can optionally associate with an experiment.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -79,7 +79,11 @@ export const paperTools: Tool[] = [
         },
         outputPath: {
           type: 'string',
-          description: 'Local path to save the PDF (optional; download not implemented yet)',
+          description: 'Local path to save the PDF (optional)',
+        },
+        experimentId: {
+          type: 'string',
+          description: 'Optional experiment ID to associate this paper with (e.g., EXP-2026-01-30-001). Papers will be stored in a directory specific to this experiment.',
         },
         preferredSources: {
           type: 'array',
@@ -96,7 +100,7 @@ export const paperTools: Tool[] = [
   },
   {
     name: 'paper_import',
-    description: 'Import a PDF paper and convert it to Markdown using docling',
+    description: 'Import a PDF paper and convert it to Markdown using docling. Can optionally associate with an experiment.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -107,6 +111,10 @@ export const paperTools: Tool[] = [
         paperId: {
           type: 'string',
           description: 'Optional DOI or arXiv ID of the paper',
+        },
+        experimentId: {
+          type: 'string',
+          description: 'Optional experiment ID to associate this paper with (e.g., EXP-2026-01-30-001). Papers will be stored in a directory specific to this experiment.',
         },
         categories: {
           type: 'array',
@@ -223,6 +231,7 @@ export async function handlePaperTool(
     preferredSources: z.array(z.string()).optional(),
     timeoutMs: z.number().int().positive().optional(),
     outputPath: z.string().min(1).optional(),
+    experimentId: z.string().min(1).optional(),
   }).refine((v) => !!(v.doi || v.arxivId || v.pmcId || v.url), {
     message: 'One of doi/arxivId/pmcId/url is required',
   });
@@ -379,10 +388,32 @@ export async function handlePaperTool(
         };
       }
 
-      if (parsed.data.outputPath) {
+      // 実験IDが指定された場合、自動的に出力パスを決定
+      const path = await import('node:path');
+      const fs = await import('node:fs/promises');
+      let finalOutputPath = parsed.data.outputPath;
+      
+      if (parsed.data.experimentId && !finalOutputPath) {
+        const storagePath = process.env.ARIA_STORAGE_PATH ?? process.cwd();
+        const papersDir = path.join(storagePath, 'storage', 'papers', parsed.data.experimentId);
+        await fs.mkdir(papersDir, { recursive: true });
+        
+        // ファイル名を生成（DOI/arXiv ID/PMC IDから）
+        const fileName = parsed.data.arxivId 
+          ? `arxiv-${parsed.data.arxivId.replace(/[/:]/g, '-')}.pdf`
+          : parsed.data.doi
+            ? `doi-${parsed.data.doi.replace(/[/:]/g, '-')}.pdf`
+            : parsed.data.pmcId
+              ? `${parsed.data.pmcId}.pdf`
+              : `paper-${Date.now()}.pdf`;
+        
+        finalOutputPath = path.join(papersDir, fileName);
+      }
+
+      if (finalOutputPath) {
         const downloaded = await downloadPdfToPath(
           resolved.value.pdfUrl,
-          parsed.data.outputPath,
+          finalOutputPath,
           {
             ...(parsed.data.timeoutMs ? { timeoutMs: parsed.data.timeoutMs } : {}),
           },
@@ -417,6 +448,7 @@ export async function handlePaperTool(
                   success: true,
                   result: resolved.value,
                   download: downloaded.value,
+                  ...(parsed.data.experimentId ? { experimentId: parsed.data.experimentId } : {}),
                 },
                 null,
                 2,
@@ -434,8 +466,8 @@ export async function handlePaperTool(
               {
                 success: true,
                 result: resolved.value,
-                outputPath: parsed.data.outputPath,
-                note: 'Resolved PDF URL only (no download requested)',
+                outputPath: finalOutputPath,
+                note: finalOutputPath ? undefined : 'Resolved PDF URL only (no download requested)',
               },
               null,
               2,
@@ -462,7 +494,22 @@ export async function handlePaperTool(
         };
       }
 
-      const outputDir = typeof args.outputDir === 'string' ? args.outputDir : undefined;
+      // 実験IDが指定された場合、実験ごとのディレクトリに出力
+      const experimentId = typeof args.experimentId === 'string' ? args.experimentId : undefined;
+      const path = await import('node:path');
+      const fs = await import('node:fs/promises');
+      
+      let outputDir = typeof args.outputDir === 'string' ? args.outputDir : undefined;
+      
+      if (experimentId) {
+        // 実験IDからディレクトリパスを構築: storage/papers/{experimentId}/
+        const storagePath = process.env.ARIA_STORAGE_PATH ?? process.cwd();
+        outputDir = path.join(storagePath, 'storage', 'papers', experimentId);
+        
+        // ディレクトリを作成
+        await fs.mkdir(outputDir, { recursive: true });
+      }
+      
       const converted = await convertPdfToMarkdown({
         pdfPath,
         ...(outputDir ? { outputDir } : {}),
@@ -499,6 +546,7 @@ export async function handlePaperTool(
                 pdfPath,
                 markdownPath: converted.value.markdownPath,
                 ...(converted.value.assetsDir ? { assetsDir: converted.value.assetsDir } : {}),
+                ...(experimentId ? { experimentId, outputDir } : {}),
               },
               null,
               2,
