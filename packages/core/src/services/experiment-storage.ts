@@ -41,20 +41,50 @@ export interface ExperimentSearchResult {
 
 export interface ExperimentStorageOptions {
   basePath: string;
+  /** 実験データのルートパス（論文、インデックスなど） */
+  dataRootPath?: string;
 }
 
 /**
  * 実験ログのファイルベースストレージサービス
  * 
  * ディレクトリ構造:
- *   storage/experiments/YYYY/MM/DD/EXP-YYYY-MM-DD-NNN.yaml
+ *   storage/experiments/YYYY/MM/DD/EXP-YYYY-MM-DD-NNN.yaml  (実験ログ)
+ *   storage/data/EXP-YYYY-MM-DD-NNN/                        (実験データ)
+ *     ├── papers/                                           (論文)
+ *     ├── index/                                            (GraphRAGインデックス)
+ *     └── assets/                                           (その他のアセット)
  */
 export class ExperimentStorageService {
   private basePath: string;
+  private dataRootPath: string;
   private sequenceCache: Map<string, number> = new Map();
 
   constructor(options: ExperimentStorageOptions) {
     this.basePath = options.basePath;
+    // データルートはbasePathの親ディレクトリ/data、またはオプションで指定
+    this.dataRootPath = options.dataRootPath ?? join(dirname(options.basePath), 'data');
+  }
+
+  /**
+   * 実験データディレクトリのパスを取得
+   */
+  getExperimentDataDir(experimentId: string): string {
+    return join(this.dataRootPath, experimentId);
+  }
+
+  /**
+   * 実験の論文ディレクトリのパスを取得
+   */
+  getExperimentPapersDir(experimentId: string): string {
+    return join(this.getExperimentDataDir(experimentId), 'papers');
+  }
+
+  /**
+   * 実験のインデックスディレクトリのパスを取得
+   */
+  getExperimentIndexDir(experimentId: string): string {
+    return join(this.getExperimentDataDir(experimentId), 'index');
   }
 
   /**
@@ -140,8 +170,14 @@ export class ExperimentStorageService {
       const filePath = this.getFilePath(entity.experimentId);
       const dir = dirname(filePath);
 
-      // ディレクトリ作成
+      // 実験ログディレクトリ作成
       await mkdir(dir, { recursive: true });
+
+      // 実験データディレクトリ作成（papers, index, assets）
+      const dataDir = this.getExperimentDataDir(entity.experimentId);
+      await mkdir(join(dataDir, 'papers'), { recursive: true });
+      await mkdir(join(dataDir, 'index'), { recursive: true });
+      await mkdir(join(dataDir, 'assets'), { recursive: true });
 
       // YAMLとして保存
       const yaml = YAML.stringify(entity.toJSON());

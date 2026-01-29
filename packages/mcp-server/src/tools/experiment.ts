@@ -182,7 +182,12 @@ export async function handleExperimentTool(
         tags: exp.tags,
         createdAt: exp.createdAt,
         message: `Experiment "${exp.title}" created successfully`,
-        path: `storage/experiments/${exp.date.replace(/-/g, '/')}/${exp.experimentId}.yaml`,
+        paths: {
+          log: `storage/experiments/${exp.date.replace(/-/g, '/')}/${exp.experimentId}.yaml`,
+          data: `storage/data/${exp.experimentId}/`,
+          papers: `storage/data/${exp.experimentId}/papers/`,
+          index: `storage/data/${exp.experimentId}/index/`,
+        },
       };
 
       return {

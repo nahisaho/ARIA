@@ -218,7 +218,7 @@ export async function handleGraphRAGTool(
     case 'graphrag_index': {
       const documentPaths = args.documentPaths as string[] | undefined;
       const experimentIds = args.experimentIds as string[] | undefined;
-      const workDir = args.workDir as string | undefined;
+      let workDir = args.workDir as string | undefined;
 
       // documentPaths または experimentIds のどちらかが必要
       if ((!documentPaths || documentPaths.length === 0) && (!experimentIds || experimentIds.length === 0)) {
@@ -243,6 +243,14 @@ export async function handleGraphRAGTool(
       const fs = await import('node:fs/promises');
       const path = await import('node:path');
       const documents: GraphRagDocument[] = [];
+      const storage = getExperimentStorage();
+      
+      // 実験IDが1つだけ指定された場合、その実験のインデックスディレクトリを使用
+      let targetExperimentId: string | undefined;
+      if (experimentIds && experimentIds.length === 1 && !workDir) {
+        targetExperimentId = experimentIds[0]!;
+        workDir = storage.getExperimentIndexDir(targetExperimentId);
+      }
 
       // ファイルパスからドキュメントを読み込み
       if (documentPaths && documentPaths.length > 0) {
@@ -260,13 +268,35 @@ export async function handleGraphRAGTool(
         }
       }
 
-      // 実験IDから実験ノートを読み込み
+      // 実験IDから実験ノートを読み込み + 実験ディレクトリ内の論文も自動的に含める
       if (experimentIds && experimentIds.length > 0) {
-        const storage = getExperimentStorage();
         for (const expId of experimentIds) {
           const result = await storage.get(expId);
           if (result.ok) {
             documents.push(experimentToDocument(result.value));
+            
+            // 実験ディレクトリ内の論文も読み込み
+            const papersDir = storage.getExperimentPapersDir(expId);
+            try {
+              const files = await fs.readdir(papersDir);
+              for (const file of files) {
+                if (file.endsWith('.md') || file.endsWith('.txt')) {
+                  const filePath = path.join(papersDir, file);
+                  const content = await fs.readFile(filePath, 'utf-8');
+                  documents.push({
+                    id: `${expId}-${path.basename(file, path.extname(file))}`,
+                    text: content,
+                    metadata: { 
+                      path: filePath, 
+                      type: 'paper',
+                      experimentId: expId,
+                    },
+                  });
+                }
+              }
+            } catch (e) {
+              // papers ディレクトリが存在しない場合は無視
+            }
           }
         }
       }

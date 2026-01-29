@@ -16,6 +16,21 @@ import type {
   PaperDownloadRequest,
   PaperDownloadResult,
 } from '@aria/paper-downloader';
+import { ExperimentStorageService } from '@aria/core';
+import { join } from 'node:path';
+
+// 実験ストレージインスタンス（遅延初期化）
+let experimentStorage: ExperimentStorageService | null = null;
+
+function getExperimentStorage(): ExperimentStorageService {
+  if (!experimentStorage) {
+    const basePath = process.env.ARIA_STORAGE_PATH ?? process.cwd();
+    experimentStorage = new ExperimentStorageService({
+      basePath: join(basePath, 'storage', 'experiments'),
+    });
+  }
+  return experimentStorage;
+}
 
 export const paperTools: Tool[] = [
   {
@@ -394,8 +409,9 @@ export async function handlePaperTool(
       let finalOutputPath = parsed.data.outputPath;
       
       if (parsed.data.experimentId && !finalOutputPath) {
-        const storagePath = process.env.ARIA_STORAGE_PATH ?? process.cwd();
-        const papersDir = path.join(storagePath, 'storage', 'papers', parsed.data.experimentId);
+        // 実験IDから実験データディレクトリのpapersフォルダを使用
+        const storage = getExperimentStorage();
+        const papersDir = storage.getExperimentPapersDir(parsed.data.experimentId);
         await fs.mkdir(papersDir, { recursive: true });
         
         // ファイル名を生成（DOI/arXiv ID/PMC IDから）
@@ -496,17 +512,16 @@ export async function handlePaperTool(
 
       // 実験IDが指定された場合、実験ごとのディレクトリに出力
       const experimentId = typeof args.experimentId === 'string' ? args.experimentId : undefined;
-      const path = await import('node:path');
       const fs = await import('node:fs/promises');
       
       let outputDir = typeof args.outputDir === 'string' ? args.outputDir : undefined;
       
       if (experimentId) {
-        // 実験IDからディレクトリパスを構築: storage/papers/{experimentId}/
-        const storagePath = process.env.ARIA_STORAGE_PATH ?? process.cwd();
-        outputDir = path.join(storagePath, 'storage', 'papers', experimentId);
+        // 実験IDから実験データディレクトリのpapersフォルダを使用
+        const storage = getExperimentStorage();
+        outputDir = storage.getExperimentPapersDir(experimentId);
         
-        // ディレクトリを作成
+        // ディレクトリを作成（通常は実験作成時に作成済み）
         await fs.mkdir(outputDir, { recursive: true });
       }
       

@@ -138,6 +138,21 @@ variables:
     - convergence_epoch
 ```
 
+**ディレクトリ構造：**
+実験を作成すると、以下のディレクトリが自動的に作成されます：
+
+```
+storage/
+├── experiments/
+│   └── 2026/01/30/
+│       └── EXP-2026-01-30-001.yaml    # 実験ログ
+└── data/
+    └── EXP-2026-01-30-001/            # 実験データディレクトリ
+        ├── papers/                     # この実験に関連する論文
+        ├── index/                      # この実験用のGraphRAGインデックス
+        └── assets/                     # その他のアセット
+```
+
 **検索：**
 ```
 @aria 「学習率」に関する実験を検索
@@ -262,7 +277,7 @@ Self-Attention --[is_component_of]--> Transformer
 @aria 論文 arXiv:1706.03762 を実験 EXP-2026-01-30-001 に関連付けてダウンロード
 ```
 
-> **ディレクトリ構造**: 実験IDを指定すると、`storage/papers/{experimentId}/` に保存されます。
+> **ディレクトリ構造**: 実験IDを指定すると、`storage/data/{experimentId}/papers/` に保存されます。
 
 #### `paper_import`
 論文をインポートして処理します。実験IDを指定すると、その実験用のディレクトリに変換結果が保存されます。
@@ -274,6 +289,8 @@ Self-Attention --[is_component_of]--> Transformer
 # 実験に関連付けてインポート
 @aria 論文 ./papers/attention.pdf を実験 EXP-2026-01-30-001 に関連付けてインポート
 ```
+
+> **ディレクトリ構造**: 実験IDを指定すると、`storage/data/{experimentId}/papers/` に変換されたMarkdownファイルが保存されます。
 
 #### `paper_analyze`
 インポートした論文を詳細分析します。
@@ -288,35 +305,37 @@ Self-Attention --[is_component_of]--> Transformer
 ドキュメントや実験ノートからナレッジグラフのインデックスを作成します。
 
 > **推奨ワークフロー**: 
-> 1. `paper_import` で複数の論文をインポート、または `experiment_create` で実験を記録
-> 2. `graphrag_index` でまとめてインデックスを作成
-> 3. `graphrag_query` で検索
+> 1. `experiment_create` で実験を作成（ディレクトリが自動作成される）
+> 2. `paper_import` で論文をインポート（実験IDを指定）
+> 3. `graphrag_index` でインデックスを作成（実験IDを指定）
+> 4. `graphrag_query` で検索
+
+**実験ごとにインデックスを作成（推奨）：**
+```
+# 実験IDを指定してインデックスを作成
+# 実験ノート + 実験ディレクトリ内の論文が自動的にインデックスされる
+@aria 実験 EXP-2026-01-30-001 のナレッジグラフを作成
+```
+
+> **注意**: 実験IDを1つ指定すると、インデックスは `storage/data/{experimentId}/index/` に作成されます。実験ディレクトリ内の論文（`papers/` フォルダ）も自動的にインデックスに含まれます。
 
 **論文からインデックスを作成：**
 ```
-# インポート済みの論文からインデックスを作成
-@aria ./storage/papers/processed フォルダの論文でインデックスを作成
-
-# または特定のファイルを指定
+# 特定のファイルを指定
 @aria 以下のファイルでインデックスを作成:
-- storage/papers/processed/attention-paper.md
-- storage/papers/processed/bert-paper.md
+- storage/papers/attention-paper.md
+- storage/papers/bert-paper.md
 ```
 
-**実験ノートからインデックスを作成：**
+**複数の実験をまとめてインデックス：**
 ```
-# 特定の実験ノートでインデックスを作成
+# 複数の実験ノートを組み合わせてインデックスを作成
 @aria 以下の実験でナレッジグラフを作成:
 - EXP-2026-01-30-001
 - EXP-2026-01-30-002
-
-# 論文と実験ノートを組み合わせてインデックスを作成
-@aria 以下をナレッジグラフにインデックス:
-- 論文: storage/papers/processed/transformer.md
-- 実験: EXP-2026-01-30-001, EXP-2026-01-30-002
 ```
 
-> **注意**: 実験ノートをインデックスに含めることで、自分の実験結果と論文の知識を関連付けて検索できるようになります。
+> **注意**: 複数の実験を指定した場合、インデックスはデフォルトの `graphrag_index/` ディレクトリに作成されます。
 
 #### `graphrag_query`
 ナレッジグラフにクエリを実行します。
