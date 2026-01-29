@@ -335,6 +335,71 @@ export AZURE_OPENAI_API_KEY="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 > **注意**: `deployments` には Azure ポータルで作成したデプロイメント名を指定します。
 
+#### Microsoft Foundry (Azure AI Foundry)
+
+Microsoft Foundry は Azure AI の統合プラットフォームで、Azure OpenAI モデルに加えて、Meta Llama、DeepSeek、Grok などの Foundry Models を利用できます。
+
+```yaml
+llm:
+  providers:
+    azure-foundry:
+      type: "azure-foundry"
+      endpoint: "${AZURE_FOUNDRY_ENDPOINT}"  # プロジェクトエンドポイント
+      api_key: "${AZURE_FOUNDRY_API_KEY}"    # または Microsoft Entra ID 認証
+      deployments:
+        chat: "MAI-DS-R1"           # デプロイメント名
+        embedding: "text-embedding-3-large"
+```
+
+**環境変数の設定：**
+```bash
+# プロジェクトエンドポイント（Foundry ポータルで確認）
+export AZURE_FOUNDRY_ENDPOINT="https://YOUR-RESOURCE-NAME.services.ai.azure.com/api/projects/YOUR_PROJECT_NAME"
+export AZURE_FOUNDRY_API_KEY="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+**セットアップ手順：**
+
+1. [Microsoft Foundry ポータル](https://ai.azure.com/) にサインイン
+2. **プロジェクトを作成**（または既存のプロジェクトを選択）
+3. **Model catalog** からモデルを選択
+4. **Use this model** → **Deploy** でデプロイメントを作成
+5. **Models + Endpoints** でエンドポイント URL と API キーを確認
+
+**利用可能な Foundry Models：**
+
+| カテゴリ | モデル | 特徴 |
+|----------|--------|------|
+| **Azure 直接販売** | `gpt-4o`, `gpt-4o-mini` | Azure OpenAI モデル |
+| **Microsoft AI** | `MAI-DS-R1` | 高精度推論 |
+| **Grok** | `grok-4`, `grok-3` | フロンティア推論 |
+| **DeepSeek** | `DeepSeek-V3`, `DeepSeek-R1` | マルチモーダル |
+| **Meta Llama** | `Llama-3.3-70B-Instruct` | エンタープライズ向け |
+
+**Python SDK での使用例：**
+```python
+from azure.identity import DefaultAzureCredential
+from azure.ai.projects import AIProjectClient
+
+# プロジェクトクライアントを作成
+project_client = AIProjectClient(
+    endpoint="https://YOUR-RESOURCE-NAME.services.ai.azure.com/api/projects/YOUR_PROJECT_NAME",
+    credential=DefaultAzureCredential(),  # キーレス認証推奨
+)
+
+# OpenAI 互換クライアントを取得
+openai_client = project_client.get_openai_client()
+
+# Responses API で生成
+response = openai_client.responses.create(
+    model="MAI-DS-R1",  # デプロイメント名
+    input="What is the capital of France?",
+)
+print(response.model_dump_json(indent=2))
+```
+
+> **参考**: [Microsoft Foundry ドキュメント](https://learn.microsoft.com/azure/ai-foundry/)
+
 #### Anthropic Claude
 
 ```yaml
