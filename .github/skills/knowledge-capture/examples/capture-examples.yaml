@@ -1,0 +1,210 @@
+# 知識キャプチャ例
+
+## 1. 概念（Concept）の例
+
+### 例1: 技術用語
+```yaml
+type: concept
+name: "Retrieval-Augmented Generation"
+description: |
+  外部知識ベースから関連情報を検索し、それを文脈として
+  大規模言語モデルの生成に活用する手法。
+  幻覚（ハルシネーション）の軽減と、
+  最新情報の反映が可能になる。
+category: "NLP手法"
+aliases:
+  - "RAG"
+  - "検索拡張生成"
+tags:
+  - llm
+  - retrieval
+  - generation
+  - knowledge-base
+source: "https://arxiv.org/abs/2005.11401"
+source_type: paper
+```
+
+### 例2: フレームワーク
+```yaml
+type: concept
+name: "Microsoft GraphRAG"
+description: |
+  Microsoftが開発したグラフベースのRAGフレームワーク。
+  テキストからエンティティと関係を抽出してナレッジグラフを構築し、
+  コミュニティ検出で階層的な要約を生成する。
+  ローカル検索とグローバル検索の2つのモードを提供。
+category: "RAGフレームワーク"
+aliases:
+  - "GraphRAG"
+  - "Graph-based RAG"
+tags:
+  - graphrag
+  - microsoft
+  - knowledge-graph
+  - community-detection
+source: "https://github.com/microsoft/graphrag"
+source_type: url
+```
+
+---
+
+## 2. 手法（Method）の例
+
+### 例1: アルゴリズム
+```yaml
+type: method
+name: "Self-Attention"
+description: |
+  入力シーケンス内の各位置が、他のすべての位置に対して
+  注意（アテンション）を向ける機構。
+  Query、Key、Valueの3つのベクトルを使用して
+  関連度スコアを計算し、重み付け和を出力する。
+purpose: "シーケンス内の長距離依存関係を効率的に捉える"
+steps:
+  - "入力をQuery, Key, Valueに線形変換"
+  - "QueryとKeyの内積でスコア計算"
+  - "Softmaxで正規化"
+  - "Valueとの重み付け和を計算"
+prerequisites:
+  - "入力の埋め込み表現"
+tags:
+  - transformer
+  - attention
+  - nlp
+source: "Attention Is All You Need (2017)"
+source_type: paper
+```
+
+### 例2: ワークフロー
+```yaml
+type: method
+name: "GraphRAG Indexing Pipeline"
+description: |
+  GraphRAGでテキストをインデックス化するパイプライン。
+  テキスト分割、エンティティ抽出、グラフ構築、
+  コミュニティ検出、要約生成を順に実行する。
+purpose: "テキストコーパスからナレッジグラフを構築する"
+steps:
+  - "テキストをチャンクに分割（chunk_size設定）"
+  - "LLMでエンティティと関係を抽出"
+  - "グラフ構造を構築"
+  - "Louvainでコミュニティを検出"
+  - "各コミュニティの要約を生成"
+  - "ベクトル埋め込みを生成"
+prerequisites:
+  - "LLMプロバイダーの設定"
+  - "入力テキストの準備"
+tags:
+  - graphrag
+  - indexing
+  - pipeline
+source: "EXP-2026-01-28-001"
+source_type: experiment
+```
+
+---
+
+## 3. 発見（Finding）の例
+
+### 例1: 実験結果
+```yaml
+type: finding
+name: "chunk_size=300がバランス最適"
+description: |
+  GraphRAGのインデキシングにおいて、chunk_size=300が
+  recall（0.85）とprecision（0.78）のバランスが最も良い。
+  200以下では文脈が失われ、400以上ではノイズが増加する。
+evidence: |
+  テストデータセット（論文100件）での評価結果：
+  - chunk_size=200: recall=0.72, precision=0.82
+  - chunk_size=300: recall=0.85, precision=0.78
+  - chunk_size=400: recall=0.89, precision=0.65
+conditions: |
+  - データセット: 学術論文100件
+  - LLM: Llama3.2
+  - 評価クエリ: 50問
+confidence: medium
+implications:
+  - "デフォルト設定として300を推奨"
+  - "ドメインによる調整が必要な可能性"
+tags:
+  - graphrag
+  - parameter-tuning
+  - chunk-size
+source: "EXP-2026-01-28-001"
+source_type: experiment
+```
+
+### 例2: 観察
+```yaml
+type: finding
+name: "グローバル検索は概要質問に適している"
+description: |
+  GraphRAGのグローバル検索は、広範なトピックについての
+  概要や要約を求める質問に対して、ローカル検索よりも
+  適切な回答を生成する傾向がある。
+evidence: |
+  「〇〇分野の動向」「〇〇の主要なアプローチ」といった
+  質問に対する回答品質を比較評価した結果。
+conditions: "質問50問での評価"
+confidence: high
+implications:
+  - "質問タイプに応じた検索モード選択が重要"
+  - "自動モード選択の精度向上が課題"
+tags:
+  - graphrag
+  - global-search
+  - query-type
+source: "会話ログ"
+source_type: conversation
+```
+
+---
+
+## 4. 関係（Relation）の例
+
+### 例1: 分類関係
+```yaml
+type: relation
+from_entity: "GraphRAG"
+to_entity: "Retrieval-Augmented Generation"
+relation_type: is_a
+description: "GraphRAGはRAGの一種で、グラフ構造を活用する"
+bidirectional: false
+```
+
+### 例2: 使用関係
+```yaml
+type: relation
+from_entity: "GraphRAG"
+to_entity: "Community Detection"
+relation_type: uses
+description: "GraphRAGはコミュニティ検出を使用して階層的な要約を生成する"
+bidirectional: false
+```
+
+### 例3: 派生関係
+```yaml
+type: relation
+from_entity: "LazyGraphRAG"
+to_entity: "GraphRAG"
+relation_type: variant_of
+description: |
+  LazyGraphRAGはGraphRAGの軽量版。
+  事前にグラフを構築せず、クエリ時にオンデマンドで構築する。
+bidirectional: false
+source: "https://arxiv.org/abs/2410.06130"
+source_type: paper
+```
+
+### 例4: 支持関係
+```yaml
+type: relation
+from_entity: "chunk_size=300がバランス最適"
+to_entity: "GraphRAG Indexing Pipeline"
+relation_type: supports
+description: "実験結果がインデキシングパイプラインの最適パラメータを支持"
+bidirectional: false
+source: "EXP-2026-01-28-001"
+source_type: experiment
+```

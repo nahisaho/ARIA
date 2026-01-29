@@ -1,0 +1,53 @@
+# ログファイル
+*.log
+
+# 依存関係
+node_modules/
+.pnpm-store/
+
+# ビルド出力
+dist/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+.eggs/
+*.egg-info/
+.venv/
+venv/
+
+# 環境変数
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# テスト
+coverage/
+.nyc_output/
+
+# GraphRAG
+storage/knowledge-graph/vectors/*
+storage/knowledge-graph/graph/*
+
+# 論文データ（大きいファイル）
+storage/papers/inbox/*.pdf
+storage/papers/processed/*/figures/*
+
+# ただし .gitkeep は追跡
+!**/.gitkeep
+tests/python-bridge/test-sample.pdf

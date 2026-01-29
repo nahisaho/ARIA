@@ -1,0 +1,53 @@
+# 実験ログテンプレート v1.0
+# ARIA - AI Research & Inquiry Assistant
+
+# === 基本情報 ===
+title: ""                    # 必須: 実験タイトル
+description: ""              # 任意: 詳細説明
+category: ""                 # 必須: hypothesis|data-collection|analysis|visualization|model-training|evaluation|other
+tags: []                     # 推奨: 検索用タグ
+
+# === 実験設定 ===
+hypothesis: ""               # 仮説（hypothesis カテゴリの場合は必須）
+methodology: ""              # 手法の説明
+environment:                 # 実行環境
+  llm_provider: ""           # azure-openai|openai|anthropic|ollama
+  llm_model: ""              # 使用モデル名
+  tools: []                  # 使用ツール
+
+# === 入力 ===
+inputs:
+  - name: ""
+    type: ""                 # file|parameter|data|reference
+    value: ""
+    source: ""               # 任意: データソース
+    description: ""          # 任意: パラメータの説明
+
+# === 出力 ===
+outputs:
+  - name: ""
+    type: ""                 # file|metric|visualization|model
+    value: ""
+    path: ""                 # 任意: ファイルパス
+    unit: ""                 # 任意: 単位（精度、時間など）
+
+# === 観察・結論 ===
+observations: []             # 観察事項のリスト
+conclusions: ""              # 結論
+next_steps: []               # 次のステップ
+
+# === 関連情報 ===
+relatedPapers: []            # 関連論文ID
+relatedExperiments: []       # 関連実験ID
+references: []               # 参考URL・文献
+
+# === メタデータ（自動生成） ===
+# 以下のフィールドはシステムが自動的に設定します
+# id: auto-generated UUID
+# experimentId: auto-generated EXP-YYYY-MM-DD-NNN
+# date: auto-generated YYYY-MM-DD
+# timestamp: auto-generated Unix timestamp
+# interactions: auto-captured from Copilot
+# version: auto-incremented
+# createdAt: auto-generated ISO8601
+# updatedAt: auto-generated ISO8601

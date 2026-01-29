@@ -1,0 +1,209 @@
+# 実験計画ワークフロー
+# research-workflow スキル用
+
+name: experiment-planning
+description: 体系的な実験計画を立案・実行するワークフロー
+version: "1.0"
+
+# ワークフロー定義
+phases:
+  # === Phase 1: 仮説設定 ===
+  - id: hypothesis-setting
+    name: 仮説設定
+    description: 研究仮説を明確に定義
+    steps:
+      - id: define-question
+        action: manual
+        description: |
+          研究質問を明確化する
+          - 何を知りたいのか？
+          - なぜ重要なのか？
+          - 既存研究との関係は？
+        output: research_question
+
+      - id: review-literature
+        action: mcp_tool
+        tool: graphrag_query
+        params:
+          query: "{{research_question}}に関する既存研究"
+        description: 関連する既存研究を確認
+        output: related_work
+
+      - id: formulate-hypothesis
+        action: manual
+        description: |
+          仮説を文書化する
+          - 検証可能な形で記述
+          - 予測される結果を明示
+          - 帰無仮説も考慮
+        output: hypothesis
+
+      - id: create-experiment-log
+        action: mcp_tool
+        tool: experiment_create
+        params:
+          title: "{{research_question}}"
+          category: hypothesis
+          hypothesis: "{{hypothesis}}"
+          tags: [planning]
+        description: 実験ログを作成
+        output: experiment_id
+
+  # === Phase 2: 実験設計 ===
+  - id: experiment-design
+    name: 実験設計
+    description: 実験の詳細設計を行う
+    steps:
+      - id: define-variables
+        action: manual
+        description: |
+          変数を定義する
+          - 独立変数（操作する変数）
+          - 従属変数（測定する変数）
+          - 統制変数（固定する変数）
+        output: variables
+
+      - id: select-metrics
+        action: manual
+        description: |
+          評価指標を選定する
+          - 主要指標
+          - 副次指標
+          - ベースライン
+        output: metrics
+
+      - id: design-procedure
+        action: manual
+        description: |
+          実験手順を設計する
+          - データの準備
+          - 実行ステップ
+          - 測定方法
+        output: procedure
+
+      - id: estimate-resources
+        action: manual
+        description: |
+          必要リソースを見積もる
+          - 計算資源
+          - 時間
+          - データ
+        output: resources
+
+      - id: update-experiment
+        action: mcp_tool
+        tool: experiment_update
+        params:
+          experiment_id: "{{experiment_id}}"
+          methodology: "{{procedure}}"
+          inputs:
+            - name: variables
+              type: data
+              value: "{{variables}}"
+            - name: metrics
+              type: data
+              value: "{{metrics}}"
+        description: 実験ログを更新
+        output: updated_experiment
+
+  # === Phase 3: 実行・記録 ===
+  - id: execution
+    name: 実行・記録
+    description: 実験を実行し、結果を記録
+    steps:
+      - id: prepare-data
+        action: manual
+        description: |
+          データを準備する
+          - データの収集
+          - 前処理
+          - 分割（train/val/test）
+        output: prepared_data
+
+      - id: run-experiment
+        action: manual
+        description: |
+          実験を実行する
+          - 各条件でのラン
+          - 中間結果の確認
+          - 問題発生時の対応
+        output: raw_results
+
+      - id: record-results
+        action: mcp_tool
+        tool: experiment_update
+        params:
+          experiment_id: "{{experiment_id}}"
+          outputs:
+            - name: results
+              type: metric
+              value: "{{raw_results}}"
+          observations:
+            - "実験中の観察事項"
+        description: 結果を記録
+        output: recorded_results
+
+  # === Phase 4: 分析・報告 ===
+  - id: analysis-report
+    name: 分析・報告
+    description: 結果を分析し、結論を導出
+    steps:
+      - id: analyze-results
+        action: manual
+        description: |
+          結果を分析する
+          - 統計的検定
+          - 可視化
+          - パターンの特定
+        output: analysis
+
+      - id: interpret-findings
+        action: manual
+        description: |
+          結果を解釈する
+          - 仮説は支持されたか？
+          - 予想外の発見は？
+          - 制限事項は？
+        output: interpretation
+
+      - id: capture-findings
+        action: mcp_tool
+        tool: knowledge_add
+        params:
+          type: finding
+          name: "{{research_question}}の結果"
+          description: "{{interpretation}}"
+          evidence: "{{analysis}}"
+          source: "{{experiment_id}}"
+          source_type: experiment
+        description: 発見を知識ベースに追加
+        output: finding_id
+
+      - id: finalize-experiment
+        action: mcp_tool
+        tool: experiment_update
+        params:
+          experiment_id: "{{experiment_id}}"
+          conclusions: "{{interpretation}}"
+          next_steps:
+            - "次の実験への示唆"
+        description: 実験ログを完了
+        output: final_experiment
+
+# 使用例
+examples:
+  - name: "GraphRAG パラメータ最適化実験"
+    research_question: "GraphRAGの最適なchunk_sizeは何か？"
+    hypothesis: "chunk_size=300が精度と効率のバランスが最も良い"
+    variables:
+      independent:
+        - name: chunk_size
+          values: [200, 250, 300, 350, 400]
+      dependent:
+        - recall
+        - precision
+        - f1_score
+        - indexing_time
+    metrics:
+      primary: f1_score
+      secondary: [recall, precision]

@@ -1,0 +1,138 @@
+# サンプル実験ログ
+# GraphRAGパラメータチューニング実験
+
+id: "550e8400-e29b-41d4-a716-446655440000"
+experimentId: "EXP-2026-01-28-001"
+date: "2026-01-28"
+timestamp: 1769558400000
+
+title: "GraphRAG chunk_size パラメータ最適化"
+description: |
+  GraphRAGのインデキシングにおけるchunk_sizeとoverlap
+  パラメータの最適値を探索する実験。
+  recall と precision のバランスを評価。
+category: analysis
+tags:
+  - graphrag
+  - parameter-tuning
+  - optimization
+  - rag
+
+hypothesis: |
+  chunk_size を 200-400 の範囲で調整することで、
+  recall と precision の最適なバランスが得られる。
+
+methodology: |
+  1. テストデータセット（論文100件）を準備
+  2. chunk_size を 200, 250, 300, 350, 400 で変化
+  3. overlap を 0, 25, 50, 75 で変化
+  4. 各組み合わせで recall, precision, F1 を計測
+
+environment:
+  llm_provider: ollama
+  llm_model: llama3.2
+  tools:
+    - graphrag_index
+    - graphrag_query
+
+inputs:
+  - name: chunk_size
+    type: parameter
+    value: 300
+    description: "チャンクサイズ（トークン数）"
+  - name: overlap
+    type: parameter
+    value: 50
+    description: "チャンク間オーバーラップ（トークン数）"
+  - name: test_dataset
+    type: file
+    value: "storage/papers/test-set/"
+    description: "テスト用論文データセット（100件）"
+
+outputs:
+  - name: recall
+    type: metric
+    value: 0.85
+    unit: "ratio"
+  - name: precision
+    type: metric
+    value: 0.78
+    unit: "ratio"
+  - name: f1_score
+    type: metric
+    value: 0.81
+    unit: "ratio"
+  - name: indexing_time
+    type: metric
+    value: 245
+    unit: "seconds"
+  - name: results_csv
+    type: file
+    path: "storage/experiments/2026/01/28/EXP-2026-01-28-001-results.csv"
+
+interactions:
+  - id: "int-001"
+    timestamp: "2026-01-28T10:30:00Z"
+    type: prompt
+    content: "GraphRAGのchunk_sizeパラメータの推奨値を教えてください"
+    model: "llama3.2"
+  - id: "int-002"
+    timestamp: "2026-01-28T10:30:15Z"
+    type: response
+    content: |
+      GraphRAGのchunk_sizeは、ドキュメントの性質と検索要件に依存します。
+      一般的な推奨値：
+      - 技術文書: 250-350 トークン
+      - 論文: 300-400 トークン
+      - 短いテキスト: 150-250 トークン
+      
+      オーバーラップは chunk_size の 15-25% が推奨されます。
+    tokens:
+      prompt: 45
+      completion: 180
+  - id: "int-003"
+    timestamp: "2026-01-28T10:35:00Z"
+    type: code
+    content: |
+      # パラメータグリッドサーチの実行
+      results = []
+      for chunk_size in [200, 250, 300, 350, 400]:
+          for overlap in [0, 25, 50, 75]:
+              metrics = run_evaluation(chunk_size, overlap)
+              results.append({
+                  'chunk_size': chunk_size,
+                  'overlap': overlap,
+                  **metrics
+              })
+
+observations:
+  - "chunk_size=300 で最良の recall (0.85) を達成"
+  - "overlap=50 以上で効果が飽和する傾向"
+  - "chunk_size が大きすぎると precision が低下"
+  - "インデキシング時間は chunk_size に比例して増加"
+  - "論文データでは 300 前後が最適"
+
+conclusions: |
+  テストデータセットに対する評価の結果、
+  chunk_size=300, overlap=50 の組み合わせが
+  recall (0.85) と precision (0.78) の最適なバランスを実現した。
+  この設定を本番環境の推奨値とする。
+
+next_steps:
+  - "より大規模なデータセットでの検証"
+  - "異なるドメイン（医学、法律）での評価"
+  - "LazyGraphRAG との比較実験"
+
+relatedPapers:
+  - "PAPER-graphrag-2024"
+  - "PAPER-rag-survey-2025"
+
+relatedExperiments: []
+
+references:
+  - "https://github.com/microsoft/graphrag"
+  - "https://arxiv.org/abs/2404.16130"
+
+version: 2
+createdAt: "2026-01-28T10:30:00Z"
+updatedAt: "2026-01-28T14:45:00Z"

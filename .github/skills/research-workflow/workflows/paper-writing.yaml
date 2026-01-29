@@ -1,0 +1,229 @@
+# 論文執筆ワークフロー
+# research-workflow スキル用
+
+name: paper-writing
+description: 研究論文の執筆を支援するワークフロー
+version: "1.0"
+
+# ワークフロー定義
+phases:
+  # === Phase 1: アウトライン ===
+  - id: outlining
+    name: アウトライン作成
+    description: 論文の構成を計画
+    steps:
+      - id: gather-materials
+        action: mcp_tool
+        tool: experiment_search
+        params:
+          tags: [writing-target]
+        description: 執筆対象の実験・データを収集
+        output: experiments
+
+      - id: review-knowledge
+        action: mcp_tool
+        tool: knowledge_search
+        params:
+          query: "論文の主題に関連する知識"
+        description: 関連知識を検索
+        output: knowledge
+
+      - id: define-contribution
+        action: manual
+        description: |
+          主要な貢献を明確化する
+          - この論文の新規性は何か？
+          - 既存研究との差分は？
+          - 読者に何を伝えたいか？
+        output: contributions
+
+      - id: create-outline
+        action: manual
+        description: |
+          論文のアウトラインを作成
+          - Abstract
+          - Introduction
+          - Related Work
+          - Methodology
+          - Experiments
+          - Results
+          - Discussion
+          - Conclusion
+        output: outline
+
+  # === Phase 2: ドラフト作成 ===
+  - id: drafting
+    name: ドラフト作成
+    description: 各セクションのドラフトを執筆
+    sections:
+      - id: introduction
+        name: Introduction
+        prompts:
+          - "研究の動機と背景を説明"
+          - "既存研究の課題を提示"
+          - "提案手法の概要と貢献を述べる"
+          - "論文構成を説明"
+
+      - id: related-work
+        name: Related Work
+        prompts:
+          - "関連する先行研究を整理"
+          - "既存手法の特徴と限界を説明"
+          - "提案手法との関係を明確化"
+        tools:
+          - graphrag_query
+          - paper_search
+
+      - id: methodology
+        name: Methodology
+        prompts:
+          - "問題設定を形式的に定義"
+          - "提案手法の全体像を説明"
+          - "各コンポーネントの詳細を記述"
+          - "アルゴリズムを疑似コードで示す"
+
+      - id: experiments
+        name: Experiments
+        prompts:
+          - "実験設定（データセット、ベースライン）を説明"
+          - "評価指標を定義"
+          - "実験手順を記述"
+        tools:
+          - experiment_search
+
+      - id: results
+        name: Results
+        prompts:
+          - "主要な実験結果を提示"
+          - "表・図を用いて可視化"
+          - "統計的有意性を報告"
+
+      - id: discussion
+        name: Discussion
+        prompts:
+          - "結果の解釈と意義を議論"
+          - "制限事項を述べる"
+          - "将来の研究方向を提案"
+
+      - id: conclusion
+        name: Conclusion
+        prompts:
+          - "主要な貢献を要約"
+          - "結論を簡潔に述べる"
+          - "今後の展望を示す"
+
+      - id: abstract
+        name: Abstract
+        prompts:
+          - "論文全体を要約（150-300語）"
+          - "問題、手法、結果、貢献を含める"
+
+  # === Phase 3: 図表作成 ===
+  - id: figures-tables
+    name: 図表作成
+    description: 論文の図表を作成
+    steps:
+      - id: plan-figures
+        action: manual
+        description: |
+          必要な図を計画する
+          - システム図
+          - 結果のグラフ
+          - 比較表
+        output: figure_plan
+
+      - id: create-figures
+        action: manual
+        description: |
+          図を作成する
+          - matplotlib / seaborn / tikz
+          - 一貫したスタイル
+          - 適切なラベルとキャプション
+        output: figures
+
+      - id: create-tables
+        action: manual
+        description: |
+          表を作成する
+          - 結果の比較表
+          - パラメータ設定表
+          - 統計量の表
+        output: tables
+
+  # === Phase 4: レビュー・修正 ===
+  - id: review-revision
+    name: レビュー・修正
+    description: ドラフトをレビューし修正
+    steps:
+      - id: self-review
+        action: manual
+        description: |
+          セルフレビューを実施
+          - 論理の一貫性
+          - 表現の明確さ
+          - 文法・スペル
+        checklist:
+          - "主張は明確か？"
+          - "証拠は十分か？"
+          - "図表は理解しやすいか？"
+          - "関連研究は適切にカバーされているか？"
+
+      - id: peer-review
+        action: manual
+        description: |
+          ピアレビューを依頼
+          - 同僚・共同研究者からフィードバック
+          - 技術的正確性の確認
+          - 読みやすさの確認
+        output: review_comments
+
+      - id: revise
+        action: manual
+        description: |
+          レビューに基づき修正
+          - コメントへの対応
+          - 修正履歴の記録
+        output: revised_draft
+
+      - id: final-check
+        action: manual
+        description: |
+          最終チェック
+          - フォーマット確認
+          - 参考文献の確認
+          - 提出要件の確認
+        checklist:
+          - "ページ数制限を満たしているか？"
+          - "参考文献は正しいか？"
+          - "著者情報は正確か？"
+
+# 執筆支援プロンプト
+writing_prompts:
+  improve_clarity: |
+    以下の文章をより明確で読みやすくしてください：
+    {text}
+
+  academic_tone: |
+    以下の文章を学術的なトーンに書き換えてください：
+    {text}
+
+  generate_transition: |
+    以下の2つのパラグラフをつなぐ適切な移行文を生成してください：
+    前のパラグラフ: {para1}
+    次のパラグラフ: {para2}
+
+  summarize_section: |
+    以下のセクションを1-2文で要約してください：
+    {section}
+
+# 使用例
+examples:
+  - name: "GraphRAG最適化論文"
+    title: "Optimizing GraphRAG: Parameter Tuning for Knowledge Graph-based RAG"
+    contributions:
+      - "chunk_sizeパラメータの体系的な分析"
+      - "最適パラメータの推奨値を提案"
+      - "実用的なガイドラインを提供"
+    experiments:
+      - "EXP-2026-01-28-001"
+      - "EXP-2026-01-29-001"

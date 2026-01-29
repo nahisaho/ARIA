@@ -1,0 +1,160 @@
+# 文献レビューワークフロー
+# research-workflow スキル用
+
+name: literature-review
+description: 文献レビューを体系的に実施するワークフロー
+version: "1.0"
+
+# ワークフロー定義
+phases:
+  # === Phase 1: 検索戦略 ===
+  - id: search-strategy
+    name: 検索戦略の策定
+    description: レビュー対象の範囲と検索方法を決定
+    steps:
+      - id: define-topic
+        action: manual
+        description: |
+          研究トピックを明確に定義する
+          - 研究質問を設定
+          - スコープを決定（時期、分野、手法など）
+        output: research_question
+
+      - id: identify-keywords
+        action: manual
+        description: |
+          検索キーワードを特定する
+          - 主要キーワード
+          - 同義語・関連語
+          - 除外キーワード
+        output: keywords
+
+      - id: select-databases
+        action: manual
+        description: |
+          検索データベースを選定する
+          - Semantic Scholar
+          - arXiv
+          - Google Scholar
+          - 分野特有のDB
+        output: databases
+
+  # === Phase 2: 論文収集 ===
+  - id: paper-collection
+    name: 論文収集
+    description: 関連論文を検索・収集
+    steps:
+      - id: search-papers
+        action: mcp_tool
+        tool: paper_search
+        params:
+          query: "{{keywords}}"
+          limit: 100
+        description: キーワードで論文を検索
+        output: search_results
+
+      - id: filter-papers
+        action: manual
+        description: |
+          検索結果をフィルタリング
+          - タイトル・要旨で一次スクリーニング
+          - 関連性の高い論文を選択
+        input: search_results
+        output: selected_papers
+
+      - id: import-papers
+        action: mcp_tool
+        tool: paper_import
+        params:
+          papers: "{{selected_papers}}"
+        description: 選択した論文をインポート
+        output: imported_papers
+
+  # === Phase 3: 分析・統合 ===
+  - id: analysis
+    name: 分析・統合
+    description: 論文の内容を分析し、知見を統合
+    steps:
+      - id: analyze-papers
+        action: mcp_tool
+        tool: paper_analyze
+        params:
+          papers: "{{imported_papers}}"
+        description: 各論文を詳細分析
+        output: analysis_results
+
+      - id: index-to-graphrag
+        action: mcp_tool
+        tool: graphrag_index
+        params:
+          documents: "{{imported_papers}}"
+        description: GraphRAGにインデックス
+        output: index_status
+
+      - id: identify-themes
+        action: mcp_tool
+        tool: graphrag_global
+        params:
+          query: "主要なテーマと研究動向"
+        description: 主要テーマを特定
+        output: themes
+
+      - id: capture-knowledge
+        action: mcp_tool
+        tool: knowledge_add
+        description: 重要な知見を知識ベースに追加
+        output: knowledge_entities
+
+  # === Phase 4: 整理・報告 ===
+  - id: synthesis
+    name: 整理・報告
+    description: レビュー結果を整理して報告書を作成
+    steps:
+      - id: categorize
+        action: manual
+        description: |
+          論文をカテゴリ別に分類
+          - テーマ別
+          - 手法別
+          - 時系列
+        output: categories
+
+      - id: create-summary-table
+        action: manual
+        description: |
+          比較表を作成
+          - 手法の特徴
+          - 評価結果
+          - 制限事項
+        output: comparison_table
+
+      - id: identify-gaps
+        action: manual
+        description: |
+          研究ギャップを特定
+          - 未解決の問題
+          - 改善の余地
+          - 将来の研究方向
+        output: research_gaps
+
+      - id: write-report
+        action: experiment
+        tool: experiment_create
+        params:
+          title: "文献レビュー: {{research_question}}"
+          category: analysis
+          tags: [literature-review]
+        description: レビュー結果を実験ログとして記録
+        output: review_report
+
+# 使用例
+examples:
+  - name: "GraphRAG関連の文献レビュー"
+    research_question: "グラフ構造を活用したRAGの最新手法と課題"
+    keywords:
+      - "GraphRAG"
+      - "Knowledge Graph RAG"
+      - "Graph-based Retrieval"
+    databases:
+      - semantic_scholar
+      - arxiv

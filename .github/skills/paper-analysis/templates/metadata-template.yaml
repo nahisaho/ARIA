@@ -1,0 +1,86 @@
+# 論文メタデータテンプレート v1.0
+# paper_analyze ツールの出力形式
+
+# === 基本情報 ===
+paper_id: ""                 # 内部ID（自動生成）
+source_path: ""              # 元PDFパス
+markdown_path: ""            # 変換後Markdownパス
+
+# === 書誌情報 ===
+title: ""                    # 論文タイトル
+authors:                     # 著者リスト
+  - name: ""
+    affiliation: ""          # 所属（判明している場合）
+    email: ""                # メール（判明している場合）
+
+publication:
+  year: null                 # 出版年
+  venue: ""                  # 会議名/ジャーナル名
+  volume: ""                 # 巻号
+  pages: ""                  # ページ
+  publisher: ""              # 出版社
+
+identifiers:
+  doi: ""                    # DOI
+  arxiv: ""                  # arXiv ID
+  pmid: ""                   # PubMed ID
+  isbn: ""                   # ISBN
+
+# === 内容 ===
+abstract: ""                 # 要旨
+keywords: []                 # キーワード
+categories: []               # 分野カテゴリ
+
+# === 構造 ===
+sections:
+  - title: ""
+    level: 2                 # ヘッダーレベル
+    start_page: null         # 開始ページ
+    summary: ""              # セクション要約
+
+figures:
+  - id: ""
+    caption: ""
+    page: null
+    path: ""                 # 抽出された図のパス
+
+tables:
+  - id: ""
+    caption: ""
+    page: null
+    content: ""              # テーブル内容（Markdown形式）
+
+equations:
+  - id: ""
+    latex: ""                # LaTeX形式
+    context: ""              # 文脈
+
+references:
+  - id: ""
+    text: ""                 # 引用テキスト
+    doi: ""                  # 引用先DOI（判明している場合）
+
+# === 分析結果 ===
+analysis:
+  main_contributions: []     # 主要貢献点
+  methodology_summary: ""    # 手法概要
+  key_findings: []           # 主要な発見
+  limitations: []            # 制限事項
+  future_work: []            # 今後の課題
+
+# === 関連情報 ===
+related_papers: []           # 関連論文ID
+related_experiments: []      # 関連実験ID
+knowledge_entities: []       # 抽出された知識エンティティID
+
+# === 処理情報 ===
+processing:
+  status: pending            # pending|processing|completed|failed
+  converted_at: ""           # 変換日時
+  analyzed_at: ""            # 分析日時
+  indexed_at: ""             # インデックス日時
+  error: ""                  # エラーメッセージ（あれば）
+
+# === メタデータ ===
+created_at: ""               # 作成日時
+updated_at: ""               # 更新日時

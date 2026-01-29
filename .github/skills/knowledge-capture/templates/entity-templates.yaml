@@ -1,0 +1,139 @@
+# 知識エンティティテンプレート v1.0
+# knowledge_add ツールの入力形式
+
+# === 共通フィールド ===
+type: ""                     # 必須: concept|method|finding|relation
+name: ""                     # 必須: エンティティ名
+description: ""              # 必須: 説明（詳細な記述）
+
+aliases: []                  # 別名・同義語
+tags: []                     # 検索用タグ
+
+# === 出典情報 ===
+source: ""                   # 情報源（論文ID、実験ID、URL等）
+source_type: ""              # paper|experiment|conversation|url|manual
+
+# === 関係 ===
+relations: []                # 関係リスト（relation タイプ用）
+
+# === メタデータ（自動生成） ===
+# id: auto-generated
+# created_at: auto-generated
+# updated_at: auto-generated
+
+---
+# タイプ別テンプレート
+---
+
+# === Concept（概念）テンプレート ===
+# 用語、定義、概念の記録に使用
+type: concept
+name: ""
+description: ""
+category: ""                 # 概念のカテゴリ
+aliases: []
+tags: []
+source: ""
+source_type: ""
+
+# 例:
+# type: concept
+# name: "GraphRAG"
+# description: "グラフ構造を活用したRetrieval-Augmented Generationの手法"
+# category: "RAG手法"
+# aliases: ["Graph-based RAG", "グラフRAG"]
+# tags: [rag, knowledge-graph, llm]
+# source: "https://arxiv.org/abs/2404.16130"
+# source_type: paper
+
+---
+
+# === Method（手法）テンプレート ===
+# アルゴリズム、手順、テクニックの記録に使用
+type: method
+name: ""
+description: ""
+purpose: ""                  # 手法の目的
+steps: []                    # 手順（リスト形式）
+prerequisites: []            # 前提条件
+aliases: []
+tags: []
+source: ""
+source_type: ""
+
+# 例:
+# type: method
+# name: "Community Detection for GraphRAG"
+# description: "GraphRAGにおけるグラフコミュニティの検出手法"
+# purpose: "関連エンティティをグループ化し、要約を生成する"
+# steps:
+#   - "グラフ構造を構築"
+#   - "Louvainアルゴリズムでコミュニティを検出"
+#   - "各コミュニティの要約を生成"
+# prerequisites: ["エンティティグラフの構築済み"]
+# tags: [graphrag, community-detection, summarization]
+
+---
+
+# === Finding（発見）テンプレート ===
+# 実験結果、観察、洞察の記録に使用
+type: finding
+name: ""
+description: ""
+evidence: ""                 # 証拠・根拠
+conditions: ""               # 発見の条件・文脈
+confidence: ""               # high|medium|low
+implications: []             # 示唆・影響
+aliases: []
+tags: []
+source: ""
+source_type: ""
+
+# 例:
+# type: finding
+# name: "chunk_size 300が最適"
+# description: "GraphRAGのインデキシングでchunk_size=300が最もバランスが良い"
+# evidence: "実験EXP-2026-01-28-001の結果"
+# conditions: "100件の論文データセット、Llama3.2使用時"
+# confidence: medium
+# implications:
+#   - "小さすぎると文脈が失われる"
+#   - "大きすぎるとノイズが増える"
+# tags: [graphrag, parameter-tuning, optimization]
+# source: "EXP-2026-01-28-001"
+# source_type: experiment
+
+---
+
+# === Relation（関係）テンプレート ===
+# エンティティ間の関係の記録に使用
+type: relation
+from_entity: ""              # 関係元エンティティID または名前
+to_entity: ""                # 関係先エンティティID または名前
+relation_type: ""            # 関係タイプ（下記参照）
+description: ""              # 関係の説明
+bidirectional: false         # 双方向かどうか
+source: ""
+source_type: ""
+
+# 関係タイプ:
+#   is_a          - AはBである（分類）
+#   variant_of    - AはBの変種である
+#   part_of       - AはBの一部である
+#   uses          - AはBを使用する
+#   related_to    - AはBに関連する
+#   precedes      - AはBに先行する
+#   follows       - AはBに続く
+#   contradicts   - AはBと矛盾する
+#   supports      - AはBを支持する
+#   derived_from  - AはBから派生する
+
+# 例:
+# type: relation
+# from_entity: "LazyGraphRAG"
+# to_entity: "GraphRAG"
+# relation_type: variant_of
+# description: "LazyGraphRAGはGraphRAGの軽量版で、オンデマンドでグラフを構築する"
+# bidirectional: false
+# source: "https://arxiv.org/abs/2410.06130"
+# source_type: paper

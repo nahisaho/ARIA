@@ -1,0 +1,192 @@
+# ARIA - AI Research & Inquiry Assistant
+# 設定ファイル v0.1.0
+
+# === LLM プロバイダー設定 ===
+llm:
+  # デフォルトプロバイダー
+  default_provider: "ollama"  # テスト環境では Ollama を使用
+  
+  providers:
+    # Azure OpenAI
+    azure-openai:
+      type: "azure-openai"
+      endpoint: "${AZURE_OPENAI_ENDPOINT}"
+      api_key: "${AZURE_OPENAI_API_KEY}"
+      api_version: "2024-02-15-preview"
+      deployments:
+        chat: "gpt-4o"
+        embedding: "text-embedding-3-large"
+    
+    # OpenAI
+    openai:
+      type: "openai"
+      api_key: "${OPENAI_API_KEY}"
+      models:
+        chat: "gpt-4o"
+        embedding: "text-embedding-3-large"
+    
+    # Anthropic Claude
+    anthropic:
+      type: "anthropic"
+      api_key: "${ANTHROPIC_API_KEY}"
+      models:
+        chat: "claude-3-5-sonnet-20241022"
+    
+    # Ollama (ローカル/テスト環境)
+    ollama:
+      type: "ollama"
+      base_url: "http://192.168.224.1:11434"
+      models:
+        chat: "llama3.2"
+        embedding: "nomic-embed-text"
+  
+  # フォールバック設定
+  fallback:
+    enabled: true
+    order:
+      - ollama
+      - azure-openai
+      - openai
+      - anthropic
+    retry_count: 3
+    retry_delay_ms: 1000
+
+# === GraphRAG 設定 ===
+graphrag:
+  # インデキシング設定
+  indexing:
+    chunk_size: 300
+    chunk_overlap: 50
+    encoding_model: "cl100k_base"
+  
+  # エンティティ抽出設定
+  entity_extraction:
+    model: "ollama"  # LLMプロバイダー名
+    max_entities: 20
+    entity_types:
+      - PERSON
+      - ORGANIZATION
+      - CONCEPT
+      - METHOD
+      - DATASET
+      - METRIC
+      - PAPER
+      - TOOL
+  
+  # コミュニティ検出設定
+  community_detection:
+    algorithm: "leiden"
+    resolution: 1.0
+    max_community_size: 100
+  
+  # 要約生成設定
+  summarization:
+    model: "ollama"
+    summary_max_tokens: 500
+  
+  # クエリ設定
+  query:
+    local_search:
+      max_results: 10
+      similarity_threshold: 0.7
+      include_text_units: true
+    
+    global_search:
+      community_level: 2
+      max_summaries: 5
+      use_cached: true
+    
+    drift_search:
+      exploration_depth: 3
+      branching_factor: 5
+  
+  # ストレージ設定
+  storage:
+    vector_store:
+      type: "chroma"
+      persist_directory: "./storage/knowledge-graph/vectors"
+    
+    graph_store:
+      type: "networkx"  # ローカル開発用。本番は neo4j
+      # neo4j 設定（本番用）
+      # type: "neo4j"
+      # uri: "bolt://localhost:7687"
+      # username: "neo4j"
+      # password: "${NEO4J_PASSWORD}"
+
+# === docling 設定 ===
+docling:
+  # 出力形式
+  output_format: "markdown"
+  
+  # PDF処理設定
+  pdf:
+    ocr_enabled: true
+    table_extraction: true
+    figure_extraction: true
+    equation_extraction: true
+  
+  # パイプライン設定
+  pipeline: "default"  # default または vlm
+  vlm_model: null      # VLM使用時のモデル名
+
+# === ストレージ設定 ===
+storage:
+  base_path: "./storage"
+  
+  experiments:
+    path: "./storage/experiments"
+    format: "yaml"
+    naming_pattern: "EXP-{date}-{sequence}"
+  
+  papers:
+    inbox_path: "./storage/papers/inbox"
+    processed_path: "./storage/papers/processed"
+  
+  knowledge_graph:
+    path: "./storage/knowledge-graph"
+
+# === MCP サーバー設定 ===
+mcp:
+  server:
+    name: "aria-mcp-server"
+    version: "0.1.0"
+    port: 3100  # stdio 以外の場合
+  
+  # 有効なツール
+  tools:
+    experiment:
+      - experiment_create
+      - experiment_update
+      - experiment_search
+    paper:
+      - paper_import
+      - paper_analyze
+      - paper_search
+    graphrag:
+      - graphrag_index
+      - graphrag_query
+      - graphrag_local
+      - graphrag_global
+    knowledge:
+      - knowledge_add
+      - knowledge_search
+      - knowledge_relate
+      - knowledge_update
+
+# === ログ設定 ===
+logging:
+  level: "info"  # debug, info, warn, error
+  format: "json"
+  output:
+    - console
+    - file
+  file_path: "./logs/aria.log"
+  max_file_size: "10MB"
+  max_files: 5
+
+# === 開発設定 ===
+development:
+  debug: true
+  mock_llm: false
+  test_mode: false
