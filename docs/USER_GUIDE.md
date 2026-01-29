@@ -274,19 +274,147 @@ Self-Attention --[is_component_of]--> Transformer
 
 `config/aria.config.yaml` で各種設定をカスタマイズできます。
 
+---
+
 ### LLM プロバイダー設定
+
+#### デフォルトプロバイダーの選択
 
 ```yaml
 llm:
-  default_provider: "openai"  # または ollama, azure-openai, anthropic
-  
+  default_provider: "openai"  # openai, azure-openai, anthropic, ollama から選択
+```
+
+#### OpenAI
+
+```yaml
+llm:
   providers:
     openai:
-      api_key: "${OPENAI_API_KEY}"
+      type: "openai"
+      api_key: "${OPENAI_API_KEY}"  # 環境変数から読み込み
       models:
-        chat: "gpt-4o"
+        chat: "gpt-4o"              # チャット用モデル
+        embedding: "text-embedding-3-large"  # 埋め込み用モデル
+```
+
+**環境変数の設定：**
+```bash
+export OPENAI_API_KEY="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+**利用可能なモデル：**
+| 用途 | モデル | 特徴 |
+|------|--------|------|
+| チャット | `gpt-4o` | 最高性能、マルチモーダル |
+| チャット | `gpt-4o-mini` | コスト効率重視 |
+| チャット | `gpt-4-turbo` | 長文対応 |
+| 埋め込み | `text-embedding-3-large` | 高精度 |
+| 埋め込み | `text-embedding-3-small` | 低コスト |
+
+#### Azure OpenAI
+
+```yaml
+llm:
+  providers:
+    azure-openai:
+      type: "azure-openai"
+      endpoint: "${AZURE_OPENAI_ENDPOINT}"
+      api_key: "${AZURE_OPENAI_API_KEY}"
+      api_version: "2024-02-15-preview"
+      deployments:
+        chat: "gpt-4o"              # デプロイメント名
         embedding: "text-embedding-3-large"
 ```
+
+**環境変数の設定：**
+```bash
+export AZURE_OPENAI_ENDPOINT="https://your-resource.openai.azure.com"
+export AZURE_OPENAI_API_KEY="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+> **注意**: `deployments` には Azure ポータルで作成したデプロイメント名を指定します。
+
+#### Anthropic Claude
+
+```yaml
+llm:
+  providers:
+    anthropic:
+      type: "anthropic"
+      api_key: "${ANTHROPIC_API_KEY}"
+      models:
+        chat: "claude-3-5-sonnet-20241022"
+```
+
+**環境変数の設定：**
+```bash
+export ANTHROPIC_API_KEY="sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+**利用可能なモデル：**
+| モデル | 特徴 |
+|--------|------|
+| `claude-3-5-sonnet-20241022` | バランス型、推奨 |
+| `claude-3-opus-20240229` | 最高性能 |
+| `claude-3-haiku-20240307` | 高速・低コスト |
+
+#### Ollama（ローカル推論）
+
+```yaml
+llm:
+  providers:
+    ollama:
+      type: "ollama"
+      base_url: "http://localhost:11434"  # Ollama サーバーのURL
+      models:
+        chat: "llama3.2"
+        embedding: "nomic-embed-text"
+```
+
+**Ollama のセットアップ：**
+```bash
+# Ollama をインストール
+curl -fsSL https://ollama.com/install.sh | sh
+
+# モデルをダウンロード
+ollama pull llama3.2
+ollama pull nomic-embed-text
+
+# サーバーを起動（通常は自動起動）
+ollama serve
+```
+
+**利用可能なモデル（例）：**
+| 用途 | モデル | サイズ |
+|------|--------|--------|
+| チャット | `llama3.2` | 3B |
+| チャット | `llama3.2:70b` | 70B |
+| チャット | `mistral` | 7B |
+| チャット | `codellama` | 7B |
+| 埋め込み | `nomic-embed-text` | 137M |
+| 埋め込み | `mxbai-embed-large` | 335M |
+
+#### フォールバック設定
+
+複数のプロバイダーを設定し、障害時に自動切り替え：
+
+```yaml
+llm:
+  default_provider: "openai"
+  
+  fallback:
+    enabled: true
+    order:
+      - openai      # 最初に試行
+      - azure-openai
+      - anthropic
+      - ollama      # 最後のフォールバック
+    retry_count: 3
+    retry_delay_ms: 1000
+```
+
+---
 
 ### GraphRAG 設定
 
