@@ -10,18 +10,98 @@ import {
   queryGraphRagGlobal,
 } from '@aria/graphrag';
 import type { GraphRagDocument } from '@aria/graphrag';
+import { ExperimentStorageService, type ExperimentLog } from '@aria/core';
+import { join } from 'node:path';
+
+// 実験ストレージインスタンス（遅延初期化）
+let experimentStorage: ExperimentStorageService | null = null;
+
+function getExperimentStorage(): ExperimentStorageService {
+  if (!experimentStorage) {
+    const basePath = process.env.ARIA_STORAGE_PATH ?? process.cwd();
+    experimentStorage = new ExperimentStorageService({
+      basePath: join(basePath, 'storage', 'experiments'),
+    });
+  }
+  return experimentStorage;
+}
+
+/**
+ * 実験ログをGraphRAGドキュメント形式に変換
+ */
+function experimentToDocument(experiment: ExperimentLog): GraphRagDocument {
+  const sections: string[] = [];
+  
+  sections.push(`# ${experiment.title}`);
+  sections.push(`実験ID: ${experiment.experimentId}`);
+  sections.push(`カテゴリ: ${experiment.category}`);
+  sections.push(`日付: ${experiment.date}`);
+  
+  if (experiment.tags && experiment.tags.length > 0) {
+    sections.push(`タグ: ${experiment.tags.join(', ')}`);
+  }
+  
+  if (experiment.description) {
+    sections.push(`\n## 説明\n${experiment.description}`);
+  }
+  
+  if (experiment.hypothesis) {
+    sections.push(`\n## 仮説\n${experiment.hypothesis}`);
+  }
+  
+  if (experiment.methodology) {
+    sections.push(`\n## 方法論\n${experiment.methodology}`);
+  }
+  
+  if (experiment.inputs && experiment.inputs.length > 0) {
+    sections.push('\n## 入力');
+    for (const input of experiment.inputs) {
+      sections.push(`- ${input.name} (${input.type}): ${JSON.stringify(input.value)}`);
+    }
+  }
+  
+  if (experiment.outputs && experiment.outputs.length > 0) {
+    sections.push('\n## 出力');
+    for (const output of experiment.outputs) {
+      sections.push(`- ${output.name} (${output.type}): ${JSON.stringify(output.value)}`);
+    }
+  }
+  
+  if (experiment.observations && experiment.observations.length > 0) {
+    sections.push('\n## 観察');
+    for (const obs of experiment.observations) {
+      sections.push(`- ${obs}`);
+    }
+  }
+  
+  if (experiment.conclusions) {
+    sections.push(`\n## 結論\n${experiment.conclusions}`);
+  }
+  
+  return {
+    id: experiment.experimentId,
+    text: sections.join('\n'),
+    metadata: {
+      type: 'experiment',
+      experimentId: experiment.experimentId,
+      category: experiment.category,
+      tags: experiment.tags,
+      date: experiment.date,
+    },
+  };
+}
 
 export const graphragTools: Tool[] = [
   {
     name: 'graphrag_index',
-    description: 'Index documents into the GraphRAG knowledge graph',
+    description: 'Index documents or experiment logs into the GraphRAG knowledge graph. You can index document files, experiment logs, or both.',
     inputSchema: {
       type: 'object',
       properties: {
         documentPaths: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Paths to documents to index',
+          description: 'Paths to documents to index (e.g., paper markdown files)',
         },
         paperIds: {
           type: 'array',
@@ -31,7 +111,11 @@ export const graphragTools: Tool[] = [
         experimentIds: {
           type: 'array',
           items: { type: 'string' },
-          description: 'IDs of experiments to index',
+          description: 'IDs of experiments to index (e.g., EXP-2026-01-30-001). Each experiment will be converted to a document for indexing.',
+        },
+        workDir: {
+          type: 'string',
+          description: 'Working directory for the index (optional, default: ./graphrag_index)',
         },
         rebuildIndex: {
           type: 'boolean',
@@ -133,9 +217,11 @@ export async function handleGraphRAGTool(
   switch (name) {
     case 'graphrag_index': {
       const documentPaths = args.documentPaths as string[] | undefined;
+      const experimentIds = args.experimentIds as string[] | undefined;
       const workDir = args.workDir as string | undefined;
 
-      if (!documentPaths || documentPaths.length === 0) {
+      // documentPaths または experimentIds のどちらかが必要
+      if ((!documentPaths || documentPaths.length === 0) && (!experimentIds || experimentIds.length === 0)) {
         return {
           content: [
             {
@@ -143,7 +229,7 @@ export async function handleGraphRAGTool(
               text: JSON.stringify(
                 {
                   success: false,
-                  error: { code: 'INVALID_INPUT', message: 'documentPaths is required' },
+                  error: { code: 'INVALID_INPUT', message: 'documentPaths or experimentIds is required' },
                 },
                 null,
                 2,
@@ -158,16 +244,30 @@ export async function handleGraphRAGTool(
       const path = await import('node:path');
       const documents: GraphRagDocument[] = [];
 
-      for (const docPath of documentPaths) {
-        try {
-          const content = await fs.readFile(docPath, 'utf-8');
-          documents.push({
-            id: path.basename(docPath, path.extname(docPath)),
-            text: content,
-            metadata: { path: docPath },
-          });
-        } catch (e) {
-          // Skip files that can't be read
+      // ファイルパスからドキュメントを読み込み
+      if (documentPaths && documentPaths.length > 0) {
+        for (const docPath of documentPaths) {
+          try {
+            const content = await fs.readFile(docPath, 'utf-8');
+            documents.push({
+              id: path.basename(docPath, path.extname(docPath)),
+              text: content,
+              metadata: { path: docPath, type: 'document' },
+            });
+          } catch (e) {
+            // Skip files that can't be read
+          }
+        }
+      }
+
+      // 実験IDから実験ノートを読み込み
+      if (experimentIds && experimentIds.length > 0) {
+        const storage = getExperimentStorage();
+        for (const expId of experimentIds) {
+          const result = await storage.get(expId);
+          if (result.ok) {
+            documents.push(experimentToDocument(result.value));
+          }
         }
       }
 
@@ -179,7 +279,7 @@ export async function handleGraphRAGTool(
               text: JSON.stringify(
                 {
                   success: false,
-                  error: { code: 'INVALID_INPUT', message: 'No readable documents found' },
+                  error: { code: 'INVALID_INPUT', message: 'No readable documents or experiments found' },
                 },
                 null,
                 2,

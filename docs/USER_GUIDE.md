@@ -268,13 +268,14 @@ Self-Attention --[is_component_of]--> Transformer
 ### GraphRAG ツール
 
 #### `graphrag_index`
-インポートした論文からナレッジグラフのインデックスを作成します。
+ドキュメントや実験ノートからナレッジグラフのインデックスを作成します。
 
 > **推奨ワークフロー**: 
-> 1. `paper_import` で複数の論文をインポート
+> 1. `paper_import` で複数の論文をインポート、または `experiment_create` で実験を記録
 > 2. `graphrag_index` でまとめてインデックスを作成
 > 3. `graphrag_query` で検索
 
+**論文からインデックスを作成：**
 ```
 # インポート済みの論文からインデックスを作成
 @aria ./storage/papers/processed フォルダの論文でインデックスを作成
@@ -284,6 +285,21 @@ Self-Attention --[is_component_of]--> Transformer
 - storage/papers/processed/attention-paper.md
 - storage/papers/processed/bert-paper.md
 ```
+
+**実験ノートからインデックスを作成：**
+```
+# 特定の実験ノートでインデックスを作成
+@aria 以下の実験でナレッジグラフを作成:
+- EXP-2026-01-30-001
+- EXP-2026-01-30-002
+
+# 論文と実験ノートを組み合わせてインデックスを作成
+@aria 以下をナレッジグラフにインデックス:
+- 論文: storage/papers/processed/transformer.md
+- 実験: EXP-2026-01-30-001, EXP-2026-01-30-002
+```
+
+> **注意**: 実験ノートをインデックスに含めることで、自分の実験結果と論文の知識を関連付けて検索できるようになります。
 
 #### `graphrag_query`
 ナレッジグラフにクエリを実行します。
