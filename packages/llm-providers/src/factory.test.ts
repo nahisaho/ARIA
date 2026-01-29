@@ -97,6 +97,10 @@ describe('LLM Provider Factory', () => {
     });
 
     it('should create Anthropic provider from env', () => {
+      // Clear higher priority providers first
+      delete process.env.AZURE_OPENAI_ENDPOINT;
+      delete process.env.AZURE_OPENAI_API_KEY;
+      delete process.env.OPENAI_API_KEY;
       process.env.ANTHROPIC_API_KEY = 'test-key';
       
       const provider = createLLMProviderFromEnv();
@@ -104,6 +108,11 @@ describe('LLM Provider Factory', () => {
     });
 
     it('should create Ollama provider from env', () => {
+      // Clear higher priority providers first
+      delete process.env.AZURE_OPENAI_ENDPOINT;
+      delete process.env.AZURE_OPENAI_API_KEY;
+      delete process.env.OPENAI_API_KEY;
+      delete process.env.ANTHROPIC_API_KEY;
       process.env.OLLAMA_HOST = 'http://localhost:11434';
       
       const provider = createLLMProviderFromEnv();
